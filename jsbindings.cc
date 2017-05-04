@@ -6,7 +6,7 @@
 
 using namespace score_estimator;
 
-extern "C" int estimate(int width, int height, int *data, int player_to_move, int trials, float tolerance) {
+extern "C" int estimate(int width, int height, int *data, int player_to_move, int trials, float tolerance, int count_seki) {
     Goban g;
     g.width = width;
     g.height = height;
@@ -16,7 +16,7 @@ extern "C" int estimate(int width, int height, int *data, int player_to_move, in
         }
     }
 
-    Goban est = g.estimate((Color)player_to_move, trials, tolerance);
+    Goban est = g.estimate((Color)player_to_move, trials, tolerance, count_seki);
     for (int i=0 ,y=0; y < height; ++y) {
         for (int x=0; x < width; ++x) {
             data[i++] = est.board[y][x];

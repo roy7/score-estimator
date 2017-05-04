@@ -16,7 +16,8 @@ namespace score_estimator {
 enum Color {
     EMPTY = 0,
     BLACK = 1,
-    WHITE = -1
+    WHITE = -1,
+    SEKI = 2
 };
 
 inline Color other(Color c) { return c == BLACK ? WHITE : BLACK; }
@@ -71,7 +72,7 @@ class Goban {
 
         Goban();
         Goban(const Goban &other);
-        Goban estimate(Color player_to_move, int trials, float tolerance);
+        Goban estimate(Color player_to_move, int trials, float tolerance, bool count_seki);
         Point generateMove(Color player, int trials, float tolerance);
         inline int operator[](const Point &p) const { return board[p.y][p.x]; }
         inline int& operator[](const Point &p) { return board[p.y][p.x]; }

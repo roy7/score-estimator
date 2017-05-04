@@ -51,8 +51,9 @@ void Goban::init() {
 }
 
 
-Goban Goban::estimate(Color player_to_move, int trials, float tolerance) {
+Goban Goban::estimate(Color player_to_move, int trials, float tolerance, bool count_seki) {
     Goban ret(*this);
+    Goban original(*this);
     int   track[MAX_HEIGHT][MAX_WIDTH];
 
     do_ko_check = 0;;
@@ -87,6 +88,15 @@ Goban Goban::estimate(Color player_to_move, int trials, float tolerance) {
         }
     }
 
+printf("\nVisit counts:\n\n");
+    for (int y=0; y < height; ++y) {
+        printf("%6d|", 19-y);
+        for (int x=0; x < width; ++x) {
+            printf("%6d", track[y][x]);
+        }
+        printf(" |%-6d\n", 19-y);
+    }
+
 
     /* For each stone group, find the maximal track counter and set
      * all stones in that group to that level */
@@ -98,6 +108,15 @@ Goban Goban::estimate(Color player_to_move, int trials, float tolerance) {
                 synchronize_tracking_counters(track, visited, p);
             }
         }
+    }
+
+printf("\nVisit counts after synchronize_tracking_counters:\n\n");
+    for (int y=0; y < height; ++y) {
+        printf("%6d|", 19-y);
+        for (int x=0; x < width; ++x) {
+            printf("%6d", track[y][x]);
+        }
+        printf(" |%-6d\n", 19-y);
     }
 
 
@@ -113,9 +132,32 @@ Goban Goban::estimate(Color player_to_move, int trials, float tolerance) {
                 ret.board[y][x] = -1;
             /* if that fails, it's probably just dame */
             } else {
-                ret.board[y][x] = 0;
+                //ret.board[y][x] = 0;
+                // If we don't know what it is, it is dame or seki.
+                // If original board is 0, it is dame or an eye within seki.
+                // If original board is not 0, it is a stone in seki.
+                //
+                ret.board[y][x] = count_seki ? original.board[y][x] : original.board[y][x] ? SEKI : 0;
             }
         }
+    }
+
+printf("\nCurrent ret.board:\n\n");
+    for (int y=0; y < height; ++y) {
+        printf("%2d|", 19-y);
+        for (int x=0; x < width; ++x) {
+            printf("%2d", ret.board[y][x]);
+        }
+        printf(" |%-2d\n", 19-y);
+    }
+
+printf("\nOriginal board:\n\n");
+    for (int y=0; y < height; ++y) {
+        printf("%2d|", 19-y);
+        for (int x=0; x < width; ++x) {
+            printf("%2d", original.board[y][x]);
+        }
+        printf(" |%-2d\n", 19-y);
     }
 
 
@@ -132,6 +174,15 @@ Goban Goban::estimate(Color player_to_move, int trials, float tolerance) {
                 }
             }
         }
+    }
+
+printf("\nFilling territory:\n\n");
+    for (int y=0; y < height; ++y) {
+        printf("%2d|", 19-y);
+        for (int x=0; x < width; ++x) {
+            printf("%2d", ret.board[y][x]);
+        }
+        printf(" |%-2d\n", 19-y);
     }
 
 

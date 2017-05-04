@@ -60,7 +60,7 @@ int main(int argn, const char *args[]) {
         printf("\n\n");
         start = clock();
 
-        Goban est = goban.estimate(WHITE, 10000, 0.35);
+        Goban est = goban.estimate(WHITE, 10000, 0.35, 0);
         stop = clock();
 
         est.print();
