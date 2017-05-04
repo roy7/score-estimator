@@ -56,7 +56,7 @@ Goban Goban::estimate(Color player_to_move, int trials, float tolerance, bool co
     Goban original(*this);
     int   track[MAX_HEIGHT][MAX_WIDTH];
 
-    do_ko_check = 0;;
+    do_ko_check = 0;
     possible_ko = Point(-1,-1);
     memset(track, 0, sizeof(track));
 
@@ -118,7 +118,6 @@ printf("\nVisit counts after synchronize_tracking_counters:\n\n");
         }
         printf(" |%-6d\n", 19-y);
     }
-
 
     /* Create a result board based off of how many times each spot
      * was which color. */
