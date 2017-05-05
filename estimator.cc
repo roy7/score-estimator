@@ -46,15 +46,17 @@ Goban::Goban(const Goban &other) {
 
 
 void Goban::init() {
-    do_ko_check = 0;;
+    do_ko_check = 0;
     possible_ko = Point(-1,-1);
 }
 
 
 Goban Goban::estimate(Color player_to_move, int trials, float tolerance, bool count_seki) {
     Goban ret(*this);
+    Goban preseki(*this);
     Goban original(*this);
     int   track[MAX_HEIGHT][MAX_WIDTH];
+    bool possible_seki = false;
 
     do_ko_check = 0;
     possible_ko = Point(-1,-1);
@@ -119,6 +121,96 @@ printf("\nVisit counts after synchronize_tracking_counters:\n\n");
         printf(" |%-6d\n", 19-y);
     }
 
+    // In order to prevent a seki false positive because of dead stones, we will remove dead stones
+    // first, then re-do the simulations.
+    //
+    for (int y=0; y < height; ++y) {
+        for (int x=0; x < width; ++x) {
+            Point p(x,y);
+            /* If we're pretty confident the stone is the wrong color, remove it as a dead stone */
+            if (preseki.board[y][x] == -1 && track[y][x] > trials*tolerance) {
+                //ret.board[y][x] = 1;
+                preseki.board[y][x] = 0;
+                possible_seki = true;
+            } else if (preseki.board[y][x] == 1 && track[y][x] < trials*-tolerance) {
+                //ret.board[y][x] = -1;
+                preseki.board[y][x] = 0;
+                possible_seki = true;
+            }
+        }
+    }
+    if (possible_seki)
+{
+    do_ko_check = 0;
+    possible_ko = Point(-1,-1);
+    memset(track, 0, sizeof(track));
+
+    for (int i=0; i < trials; ++i) {
+        /* Play out a random game */
+        Goban t(preseki);
+        t.play_out_position(player_to_move);
+
+        /* fill in territory */
+        for (int y=0; y < height; ++y) {
+            for (int x=0; x < width; ++x) {
+                Point p(x,y);
+                if (t[p] == 0) {
+                    if (t.is_territory(p, BLACK)) {
+                        t.fill_territory(p, BLACK);
+                    }
+                    if (t.is_territory(p, WHITE)) {
+                        t.fill_territory(p, WHITE);
+                    }
+                }
+            }
+        }
+
+        /* track how many times each spot was white or black */
+        for (int y=0; y < height; ++y) {
+            for (int x=0; x < width; ++x) {
+                track[y][x] += t.board[y][x];
+            }
+        }
+    }
+
+printf("\nVisit counts after preseki:\n\n");
+    for (int y=0; y < height; ++y) {
+        printf("%6d|", 19-y);
+        for (int x=0; x < width; ++x) {
+            printf("%6d", track[y][x]);
+        }
+        printf(" |%-6d\n", 19-y);
+    }
+
+
+    /* For each stone group, find the maximal track counter and set
+     * all stones in that group to that level */
+    for (int y=0; y < height; ++y) {
+        for (int x=0; x < width; ++x) {
+            Point p(x,y);
+            visited[p] = 0;
+        }
+    }
+
+    for (int y=0; y < height; ++y) {
+        for (int x=0; x < width; ++x) {
+            Point p(x,y);
+            if (!visited[p]) {
+                synchronize_tracking_counters(track, visited, p);
+            }
+        }
+    }
+
+printf("\nVisit counts after preseki synchronize_tracking_counters:\n\n");
+    for (int y=0; y < height; ++y) {
+        printf("%6d|", 19-y);
+        for (int x=0; x < width; ++x) {
+            printf("%6d", track[y][x]);
+        }
+        printf(" |%-6d\n", 19-y);
+    }
+}
+
     /* Create a result board based off of how many times each spot
      * was which color. */
     for (int y=0; y < height; ++y) {
@@ -129,12 +221,13 @@ printf("\nVisit counts after synchronize_tracking_counters:\n\n");
                 ret.board[y][x] = 1;
             } else if (track[y][x] < trials*-tolerance) {
                 ret.board[y][x] = -1;
-            /* if that fails, it's probably just dame */
+            /* if that fails, it's probably just dame but might be seki */
             } else {
                 //ret.board[y][x] = 0;
                 // If we don't know what it is, it is dame or seki.
                 // If original board is 0, it is dame or an eye within seki.
                 // If original board is not 0, it is a stone in seki.
+                // If we aren't counting seki points, seki stones can't be removed else surrounding group will fill it
                 //
                 ret.board[y][x] = count_seki ? original.board[y][x] : original.board[y][x] ? SEKI : 0;
             }
@@ -252,7 +345,7 @@ bool Goban::is_territory(Point pt, Color player) {
         }
     }
 
-    return true;;
+    return true;
 }
 
 
@@ -481,7 +574,7 @@ int  Goban::remove_group(Point move, Vec &possible_moves) {
         }
     }
 
-    return n_removed;;
+    return n_removed;
 }
 
 
